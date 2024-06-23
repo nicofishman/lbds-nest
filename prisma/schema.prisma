@@ -14,8 +14,28 @@ datasource db {
 }
 
 model User {
-  id       Int     @id @default(autoincrement())
-  email    String  @unique
-  name     String?
-  password String
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  name      String?
+  password  String
+  pagoCuota Boolean   @default(false)
+  partidos  Partido[]
+
+  role String @default("BORRACHO")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Partido {
+  id           Int      @id @default(autoincrement())
+  fecha        DateTime
+  hora         String
+  lugar        String
+  rival        String
+  borrachos    User[]
+  maxBorrachos Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
