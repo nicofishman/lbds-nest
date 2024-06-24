@@ -4,12 +4,21 @@ import { UserService } from 'src/user/user.service';
 import { z } from 'zod';
 import { compare } from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { User } from '@prisma/client';
+
+type LoginPayload = {
+  user: Omit<User, 'password'>;
+  backendTokens: {
+    accessToken: string;
+    refreshToken: string;
+  };
+}
 
 @Injectable()
 export class AuthService {
   constructor(private userService: UserService, private jwtService: JwtService) { }
 
-  async login(dto: z.infer<typeof LoginDto>) {
+  async login(dto: z.infer<typeof LoginDto>): Promise<LoginPayload> {
     const user = await this.validateUser(dto);
     const payload = {
       username: user.email,
@@ -33,7 +42,7 @@ export class AuthService {
     };
   }
 
-  async validateUser(dto: z.infer<typeof LoginDto>) {
+  async validateUser(dto: z.infer<typeof LoginDto>): Promise<Omit<User, 'password'>> {
     const user = await this.userService.findByEmail(dto.email);
 
     if (user && (await compare(dto.password, user.password))) {
@@ -44,7 +53,10 @@ export class AuthService {
     throw new UnauthorizedException('Credenciales inválidas');
   }
 
-  async refreshToken(pay: any) {
+  async refreshToken(pay: any): Promise<{
+    accessToken: string;
+    refreshToken: string;
+  }> {
     const payload = {
       username: pay.username,
       sub: pay.sub

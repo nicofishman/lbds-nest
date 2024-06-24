@@ -9,7 +9,7 @@ import { z } from 'zod';
 export class UserService {
   constructor(private prisma: PrismaService) { }
 
-  async create(dto: z.infer<typeof CreateUserDto>) {
+  async create(dto: z.infer<typeof CreateUserDto>): Promise<Omit<User, 'password'>> {
     const user = await this.prisma.user.findUnique({
       where: {
         email: dto.email,
@@ -32,7 +32,7 @@ export class UserService {
     return result;
   }
 
-  async findByEmail(email: User['email']) {
+  async findByEmail(email: User['email']): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: {
         email: email,
@@ -40,7 +40,7 @@ export class UserService {
     });
   }
 
-  async findById(id: User['id']) {
+  async findById(id: User['id']): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: {
         id: id,
