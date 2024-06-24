@@ -1,6 +1,7 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { User } from '@prisma/client';
 import { hash } from 'bcrypt';
+import { Rol } from 'src/auth/enum';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateUserDto } from 'src/user/dto/user.dto';
 import { z } from 'zod';
@@ -44,6 +45,34 @@ export class UserService {
     return this.prisma.user.findUnique({
       where: {
         id: id,
+      },
+    });
+  }
+
+  async pagarCuota(id: User['id']): Promise<User> {
+    return this.prisma.user.update({
+      where: {
+        id: id,
+      },
+      data: {
+        pagoCuota: true,
+      },
+    });
+  }
+
+  async getAllBorrachos(): Promise<User[]> {
+    return this.prisma.user.findMany({
+      where: {
+        role: Rol.Borracho,
+      },
+    });
+  }
+
+  async getAllBorrachosPagos(): Promise<User[]> {
+    return this.prisma.user.findMany({
+      where: {
+        role: Rol.Borracho,
+        pagoCuota: true,
       },
     });
   }

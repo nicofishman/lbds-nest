@@ -1,4 +1,4 @@
-import { Body, ConflictException, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, ConflictException, Controller, Get, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
 import { PartidoService } from './partido.service';
 import { ZodPipe } from 'src/filters/zod.pipe';
 import { PartidoDto } from 'src/partido/dto/partido.dto';
@@ -9,10 +9,11 @@ import { differenceInDays, differenceInMonths } from 'date-fns';
 import { Partido } from '@prisma/client';
 import { JwtGuard } from 'src/auth/guards/jwt.guard';
 import { Roles } from 'src/auth/decorators/rol.decorator';
+import { UserService } from 'src/user/user.service';
 
 @Controller('partido')
 export class PartidoController {
-  constructor(private readonly partidoService: PartidoService) { }
+  constructor(private readonly partidoService: PartidoService, private readonly userService: UserService) { }
 
   @Roles(Rol.Admin)
   @UseGuards(JwtGuard, RolGuard)
@@ -32,6 +33,32 @@ export class PartidoController {
     }
 
     return this.partidoService.crearPartido(partido);
+  }
+
+  @Roles(Rol.Borracho)
+  @UseGuards(JwtGuard, RolGuard)
+  @Post('asistir/:id')
+  async asistirPartido(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    const user = await this.userService.findByEmail(req.user.username);
+    const partido = await this.partidoService.getById(id);
+
+    if (!user || !partido) {
+      throw new ConflictException('Usuario o partido no encontrado');
+    }
+
+    if (partido.maxBorrachos <= partido.borrachos.length) {
+      throw new ConflictException('No hay más cupos para el partido');
+    } else if (partido.borrachos.some((b) => b.id === user.id)) {
+      throw new ConflictException('Ya estás anotado en el partido');
+    }
+
+    return await this.partidoService.asistirPartido(id, user.id);
+  }
+
+  @UseGuards(JwtGuard)
+  @Get('lista')
+  async getPartidos() {
+    return await this.partidoService.getAll();
   }
 
   private async validarCondiciones(partido: z.infer<typeof PartidoDto>) {
